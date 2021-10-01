@@ -1,5 +1,6 @@
 import re
 import openpyxl
+from nltk.stem import WordNetLemmatizer
 
 def analyze(text_file): #should be in format "title.txt"
     rawf = open(text_file, "r")
@@ -8,6 +9,13 @@ def analyze(text_file): #should be in format "title.txt"
 
     text_list = re.split("\W", raw) #list of constituent words
     text_list = list(filter(lambda x: x != "", text_list)) #deletes empty strings
+    
+    lm = WordNetLemmatizer()
+    text_list = [lm.lemmatize(w, pos="v") for w in text_list]
+    
+    lem = open("lem.txt", "w")
+    for w in text_list:
+        lem.write(w+"\n")
 
     wb = openpyxl.Workbook() #new workbook
     ws = wb.active
