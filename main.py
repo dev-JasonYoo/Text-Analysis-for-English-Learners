@@ -1,60 +1,65 @@
 import re
 import openpyxl
+
+# import nltk #for those who haven't installed nltk and subordinate libraries
+# nltk.download('punkt')
+# nltk.download('wordnet')
+
 from nltk.stem import WordNetLemmatizer, PorterStemmer
+from nltk.tokenize import sent_tokenize
 
 def analyze(text_file): #should be in format "title.txt"
     rawf = open(text_file, "r")
     raw_txt = rawf.read() #string data of whole text
     raw_txt = raw_txt.lower() #all capital letters to small letters
 
-    text_list = re.split("\W", raw_txt) #list of constituent words
-    text_list = list(filter(lambda x: x != "", text_list)) #deletes empty strings
+    sent_list = sent_tokenize(raw_txt) #tokenize by sentence
+    sent_list = list(filter(lambda x: x != "", sent_list)) #deletes empty strings
+    
+    word_list = []
+    for sent in sent_list:
+        word_list.append(re.split("\W", sent))
     
     lm = WordNetLemmatizer()
-    lm_txt = [lm.lemmatize(word, pos="v") for word in text_list] #lemmatized text
+    lm_txt = []
+    for sent in word_list:
+        lm_txt.append([lm.lemmatize(word, pos="v") for word in sent]) #lemmatized text
     
     ps = PorterStemmer()
-    st_txt = [ps.stem(word = word) for word in lm_txt] #stemmed text
-    
-    # lem = open("lem.txt", "w") #save lm_txt as txt file
-    # for w in text_list:
-    #     lem.write(w+"\n")
-    # lem.close()
-    
-    # st = open("st.txt", "w") #save st_txt as txt file
-    # for w in text_list:
-    #     st.write(w+"\n")
-    # st.close()
-    
-    # diff = open("diff.txt", "w") #save differences PorterStemmer made between lm_txt and st_txt as txt file
-    # for i in range(len(lm_txt)):
-    #     if lm_txt[i] != st_txt[i]:
-    #         diff.write(lm_txt[i] + " " + st_txt[i] + "\n")
-    # diff.close()
-            
+    st_txt = []
+    for sent in lm_txt:
+        st_txt.append([ps.stem(word = word) for word in sent]) #stemmed text       
 
     wb = openpyxl.Workbook() #new workbook
     ws = wb.active
 
     freq = {} #dictionary that contains words and corresponding frequencies
-    count = 0 #index of lm_txt
-    for stem in st_txt:
-        if freq.get(stem) == None: #if the stem isn't initialized yet, initialize it by 0.
-            freq[stem] = {lm_txt[count] : 0}
-        elif freq[stem].get(lm_txt[count]) == None: #if the word isn't initialized yet, initialize it by 0.
-            freq[stem][lm_txt[count]] = 0
-        
-        freq[stem][lm_txt[count]] += 1 #new detection, plus one for frequency
-        count += 1
-        
-    
+    sent_count = 0 #index of sentences(first-dimension element) of lem_txt
+    stem_count = 0 #index of stems(second-dimension element) of lm_txt
+    for sent in st_txt:
+        for stem in sent:
+            if freq.get(stem) == None: #if the stem isn't initialized yet, initialize it by 0.
+                freq[stem] = {lm_txt[sent_count][stem_count] : 0}
+            elif freq[stem].get(lm_txt[sent_count][stem_count]) == None: #if the word isn't initialized yet, initialize it by 0.
+                freq[stem][lm_txt[sent_count][stem_count]] = 0
+
+            freq[stem][lm_txt[sent_count][stem_count]] += 1 #new detection, plus one for frequency
+            stem_count += 1
+
+        sent_count += 1
+        stem_count = 0
+
     row = 1 #index of freq
     for stem, words in freq.items():
         ws.cell(row = row, column = 1).value = stem #the first column with stems
+        ws.merge_cells(start_row = row, start_column = 1, end_row = row + len(freq[stem]) - 1, end_column =  1)
         for word, frequency in freq[stem].items():
             ws.cell(row = row, column = 2).value = word #the second column with words, multiple if needed
             ws.cell(row = row, column = 3).value = frequency #the third column with corresponding frequencies    
             row += 1
+            print(stem, word, frequency, row)
+            
+        # ws.merge_cells(start_row = row - len(freq[stem]), start_column = 2, end_row = row - 1, end_column =  2)
 
     wb.save(filename = f"result_{text_file[:-4]}.xlsx") #save the result worksheet
     wb.close()
