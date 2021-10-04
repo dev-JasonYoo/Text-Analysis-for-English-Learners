@@ -2,3 +2,6 @@
 *.xlsx
 *.memo.py
 *.copy.py
+*.zip
+*.epub
+__pycache__/

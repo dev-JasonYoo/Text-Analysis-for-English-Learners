@@ -14,11 +14,10 @@ def analyze(text_file): #should be in format "title.txt"
     raw_txt = raw_txt.lower() #all capital letters to small letters
 
     sent_list = sent_tokenize(raw_txt) #tokenize by sentence
-    sent_list = list(filter(lambda x: x != "", sent_list)) #deletes empty strings
     
     word_list = []
     for sent in sent_list:
-        word_list.append(re.split("\W", sent))
+        word_list.append(list(filter(lambda x: x !="",re.split("\W", sent)))) #sentences in the list are divided into words, and then empty srings are deleted
     
     lm = WordNetLemmatizer()
     lm_txt = []
@@ -28,8 +27,17 @@ def analyze(text_file): #should be in format "title.txt"
     ps = PorterStemmer()
     st_txt = []
     for sent in lm_txt:
-        st_txt.append([ps.stem(word = word) for word in sent]) #stemmed text       
+        st_txt.append([ps.stem(word = word) for word in sent]) #stemmed text
 
+    result = open("st.txt", "w") #save st_txt as txt file#
+    for s in st_txt:#
+        for w in s:#
+            result.write(w + "\n")#
+    result.write(str(st_txt) + "\n")
+    result.close()#
+    
+    print(st_txt)#
+    
     wb = openpyxl.Workbook() #new workbook
     ws = wb.active
 
